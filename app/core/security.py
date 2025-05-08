@@ -12,6 +12,12 @@ def verify_password(password: str, hash: str) -> bool:
 
 def create_access_token(payload: dict) -> str:
     try:
-        return jwt.encode(payload, SECRET_KEY, algorithm='HS256')
+        return jwt.encode(payload, SECRET_KEY, algorithm='HS256', )
     except Exception as e:
         raise ValueError(f"Token creation failed: {e}")
+    
+def decode_access_token(token) -> bool:
+    try:
+        return jwt.decode(token, SECRET_KEY, algorithms='HS256')
+    except Exception as e:
+        raise ValueError(f"Token decodation failed: {e}")

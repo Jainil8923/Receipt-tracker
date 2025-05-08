@@ -20,3 +20,6 @@ class GetUserDataModel(BaseModel):
     deleted_at: Optional[datetime] = None
     is_verified: bool
     is_deleted: bool
+
+class GetUserLoginToken(BaseModel):
+    token: str

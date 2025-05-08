@@ -1,8 +1,10 @@
 from fastapi import APIRouter, HTTPException
-from models.user import UserRegistrationModel, UserLoginModel, GetUserDataModel
+from models.user import UserRegistrationModel, UserLoginModel, GetUserDataModel, UserLoginToken
 from core.security import hash_password, verify_password, create_access_token
 from db.session import connect, disconnect, prisma
 from prisma.errors import UniqueViolationError
+import datetime
+import os
 
 auth_router = APIRouter()
 
@@ -37,6 +39,33 @@ async def register_user(user: UserRegistrationModel):
         raise
     except Exception as e:
         print(f"Error occurred in auth_service: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        raise HTTPException(status_code=500, detail="Internal server error, service = register")
     finally:
         await disconnect()
+        
+@auth_router.post('/login', response_model=UserLoginToken, status_code=201)
+async def login(user_auth: UserLoginModel):
+    try:
+        await connect()
+        existing = await prisma.user.find_first(where={"email": user_auth.email})
+        if not existing:
+            raise HTTPException(status_code=404, detail="User does not exist.")
+
+        is_password_correct = verify_password(user_auth.password, existing.password)
+        if not is_password_correct:
+            raise HTTPException(status_code=401, detail="Invalid credentials.")
+        payload = {
+            "user_email": user_auth.email,
+            "iat": datetime.datetime.utcnow(),
+            "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=int(os.getenv("JWT_EXPIRATION_MINUTES", 30)))
+        }
+        token = create_access_token(payload)
+        return {"token": token}
+
+    except HTTPException as e:
+        raise e 
+    except Exception as e:
+        print(f"Unexpected error in login service: {e}")
+        raise HTTPException(status_code=500, detail="Internal server error.")
+    finally:
+        await disconnect()     

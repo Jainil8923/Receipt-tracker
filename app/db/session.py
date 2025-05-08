@@ -1,10 +1,15 @@
-import asyncio
-from prisma import Prisma
+from generated.prisma import Client
 
-async def main() -> None:
-    db = Prisma()
-    await db.connect()
-    await db.disconnect()
+prisma = Client()
 
-if __name__ == '__main__':
-    asyncio.run(main())
+async def connect():
+    try:
+        await prisma.connect()
+    except Exception as e:
+        raise RuntimeError(f"Database connection failed: {e}")
+
+async def disconnect():
+    try:
+        await prisma.disconnect()
+    except Exception as e:
+        raise RuntimeError(f"Database disconnection failed: {e}")

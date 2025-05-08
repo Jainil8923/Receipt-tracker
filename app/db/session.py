@@ -1,10 +1,9 @@
-import asyncio
-from prisma import Prisma
+from generated.prisma import Client
 
-async def main() -> None:
-    db = Prisma()
-    await db.connect()
-    await db.disconnect()
+prisma = Client()
 
-if __name__ == '__main__':
-    asyncio.run(main())
+async def connect():
+    await prisma.connect()
+
+async def disconnect():
+    await prisma.disconnect()

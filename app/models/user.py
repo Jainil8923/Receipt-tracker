@@ -1,21 +1,20 @@
-from pydantic import BaseModel 
-from pydantic_extra_types.pendulum_dt import Date
-from typing import Optional
+from pydantic import BaseModel, EmailStr, Field
 from datetime import datetime
+from typing import Optional
 
 class UserRegistrationModel(BaseModel):
-    name: str 
-    email: str 
-    password: str 
+    name: str = Field(..., max_length=100)
+    email: EmailStr
+    password: str = Field(..., min_length=8)
 
 class UserLoginModel(BaseModel):
-    email: str 
-    password: str 
+    email: EmailStr
+    password: str
 
 class GetUserDataModel(BaseModel):
     id: str
     name: str
-    email: str
+    email: EmailStr
     created_at: datetime
     updated_at: Optional[datetime] = None
     deleted_at: Optional[datetime] = None

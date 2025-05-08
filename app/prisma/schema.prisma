@@ -15,15 +15,14 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
-
 model User {
-  id    Int     @id @default(autoincrement())
-  email String  @unique
-  name  String 
-  password String 
-  is_verified Boolean @default(false)
-  is_deleted Boolean @default(false)
-  created_at DateTime @default(now()) @db.Timestamp()
-  deleted_at DateTime? @db.Timestamp()
-  updated_at DateTime @updatedAt @db.Timestamp()
+  id          Int      @id @default(autoincrement())
+  email       String   @unique
+  name        String
+  password    String
+  is_verified Boolean  @default(false)
+  is_deleted  Boolean  @default(false)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+  deleted_at  DateTime?
 }

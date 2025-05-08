@@ -4,16 +4,17 @@ from core.security import hash_password, verify_password, create_access_token
 from db.session import connect, disconnect, prisma
 from prisma.errors import UniqueViolationError
 
-auth_router = APIRouter() 
-from fastapi import HTTPException
+auth_router = APIRouter()
 
 @auth_router.post('/register', response_model=GetUserDataModel, status_code=201)
 async def register_user(user: UserRegistrationModel):
     try:
         await connect()
+        
         existing = await prisma.user.find_unique(where={"email": user.email})
         if existing:
             raise HTTPException(status_code=409, detail="Email already registered")
+
         user.password = hash_password(user.password)
         created_user = await prisma.user.create(
             data={
@@ -35,7 +36,7 @@ async def register_user(user: UserRegistrationModel):
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Error occured in auth_service: {e}")
+        print(f"Error occurred in auth_service: {e}")
         raise HTTPException(status_code=500, detail="Internal server error")
     finally:
         await disconnect()

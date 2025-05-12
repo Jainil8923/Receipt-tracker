@@ -60,20 +60,21 @@ async def get_user_receipts(user_id: int, skip: int = 0, limit: int = 10) -> Lis
 async def get_receipt_by_id(receipt_id: int) -> ReceiptResponseModel:
     try:
         await connect()
-        receipt = await prisma.receipt.find_unique(where={"id":receipt_id})
+        receipt = await prisma.receipt.find_unique(where={"id": receipt_id})
         if not receipt:
             raise HTTPException(status_code=404, detail="Receipt not found.")
+        
         return ReceiptResponseModel(
-                id=str(receipt.id),
-                title=receipt.title,
-                amount=receipt.amount,
-                category=receipt.category,
-                date=receipt.date,
-                user_id=receipt.user_id,
-                updated_at=receipt.updated_at if hasattr(receipt, "updated_at") else None,
-                created_at=receipt.created_at
-            )
+            id=str(receipt.id),
+            title=receipt.title,
+            amount=receipt.amount,
+            category=receipt.category,
+            date=receipt.date,
+            user_id=receipt.user_id,
+            updated_at=receipt.updated_at,
+            created_at=receipt.created_at,
+        )
     except Exception as e:
-        raise e 
+        raise
     finally:
         await disconnect()

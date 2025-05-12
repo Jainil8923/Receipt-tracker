@@ -25,9 +25,8 @@ async def get_receipts_endpoint(
 
 @receipt_router.get("/{receipt_id}", response_model=ReceiptResponseModel)
 async def get_receipt_by_id_endpoint(receipt_id: int, current_user: GetUserDataModel = Depends(get_current_user)):
-    try:
-        if not receipt_id:
-            raise HTTPException(status_code=404, detail="page not exist.")
-        return await get_receipt_by_id(receipt_id)
-    except HTTPException as e:
-        raise e 
+    receipt = await get_receipt_by_id(receipt_id)
+    if str(receipt.user_id) != str(current_user.id):
+        raise HTTPException(status_code=403, detail="You are not authorized to access this receipt.")
+
+    return receipt

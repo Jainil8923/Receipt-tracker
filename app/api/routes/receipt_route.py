@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from core.deps import get_current_user
 from models.user import ReceiptCreateModel, ReceiptResponseModel, GetUserDataModel
-from services.receipt_service import create_receipt, get_user_receipts
+from services.receipt_service import create_receipt, get_user_receipts, get_receipt_by_id
 from typing import List
 
 receipt_router = APIRouter()
@@ -22,3 +22,11 @@ async def get_receipts_endpoint(
         raise e
     except Exception as e:
         raise HTTPException(status_code=500, detail="An unexpected error occurred.")
+
+@receipt_router.get("/{receipt_id}", response_model=ReceiptResponseModel)
+async def get_receipt_by_id_endpoint(receipt_id: int, current_user: GetUserDataModel = Depends(get_current_user)):
+    receipt = await get_receipt_by_id(receipt_id)
+    if str(receipt.user_id) != str(current_user.id):
+        raise HTTPException(status_code=403, detail="You are not authorized to access this receipt.")
+
+    return receipt

@@ -20,9 +20,8 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> GetUserDataMo
             raise credentials_exception
     except JWTError:
         raise credentials_exception
-    await connect()
-    user = await prisma.user.find_first(where={"email": user_email})
-    await disconnect()
+    async with prisma as db:
+        user = await db.user.find_first(where={"email": user_email})
     if user is None:
         raise credentials_exception
     return GetUserDataModel(

@@ -2,10 +2,13 @@ from passlib.hash import bcrypt
 from jose import jwt, JWTError, ExpiredSignatureError
 import os
 from fastapi import HTTPException
+from dotenv import load_dotenv
+load_dotenv()
 
-SECRET_KEY = os.getenv('SECRET_KEY', 'fallback-secret-key')
+SECRET_KEY = os.getenv('SECRET_KEY')
+if not SECRET_KEY:
+    raise ValueError("SECRET_KEY environment variable is not set.")
 ALGORITHM = "HS256"
-
 
 def hash_password(password: str) -> str:
     return bcrypt.hash(password)
@@ -26,3 +29,5 @@ def decode_access_token(token: str) -> dict:
         raise HTTPException(status_code=401, detail="Token has expired")
     except JWTError:
         raise HTTPException(status_code=401, detail="Invalid token")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {e}")

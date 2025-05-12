@@ -6,8 +6,7 @@ from core.security import decode_access_token
 app = FastAPI()
 
 app.include_router(auth_router, prefix="/auth")
-app.include_router(router, prefix='/prot')
-
+app.include_router(router, prefix='/protected')
 @app.get("/")
 async def root():
     return {"message": "Welcome to the Receipt Tracker API"}

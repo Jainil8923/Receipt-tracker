@@ -67,8 +67,9 @@ async def login(user_auth: UserLoginModel):
         response.set_cookie(
             key="access_token",
             value=token,
-            httponly=True,  
-            max_age=60*30,  
+            httponly=True,
+            secure=True,
+            max_age=60*30,
             path="/"
         )
         return {"access_token": token, "token_type": "bearer"}

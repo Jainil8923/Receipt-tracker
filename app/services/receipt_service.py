@@ -30,11 +30,15 @@ async def create_receipt(data, user_id):
         raise HTTPException(status_code=500, detail="Could not create receipt")
     finally:
         await disconnect()
-        
-async def get_user_receipts(user_id: int) -> List[ReceiptResponseModel]:
+
+async def get_user_receipts(user_id: int, skip: int = 0, limit: int = 10) -> List[ReceiptResponseModel]:
     try:
         await connect()
-        receipts_list = await prisma.receipt.find_many(where={"user_id": int(user_id)})
+        receipts_list = await prisma.receipt.find_many(
+            where={"user_id": int(user_id)},
+            skip=skip,
+            take=limit
+        )
         return [
             ReceiptResponseModel(
                 id=str(r.id),
@@ -49,7 +53,6 @@ async def get_user_receipts(user_id: int) -> List[ReceiptResponseModel]:
             for r in receipts_list
         ]
     except Exception as e:
-        print(f"Exception occure in get_user_receipts: {e}")
-        raise HTTPException(status_code=500, detail="Could not find list of receipt.")
+        raise HTTPException(status_code=500, detail="Could not fetch receipts.")
     finally:
         await disconnect()

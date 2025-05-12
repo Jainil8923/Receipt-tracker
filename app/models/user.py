@@ -24,3 +24,20 @@ class GetUserDataModel(BaseModel):
 class UserLoginToken(BaseModel):
     access_token: str = Field(..., min_length=20, description="The JWT access token for authentication.")
     token_type: str = Field(..., description="The type of token, usually 'bearer'.")
+    
+class ReceiptCreateModel(BaseModel):
+    title: str   
+    amount: float
+    category: str
+    date: datetime
+    updated_at: Optional[datetime] = None
+
+class ReceiptResponseModel(BaseModel):
+    id: str
+    title: str   
+    amount: float
+    category: str
+    date: datetime
+    user_id: int
+    updated_at: Optional[datetime] = None
+    created_at : datetime

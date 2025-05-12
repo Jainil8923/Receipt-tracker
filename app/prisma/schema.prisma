@@ -25,4 +25,17 @@ model User {
   created_at  DateTime @default(now())
   updated_at  DateTime @updatedAt
   deleted_at  DateTime?
+  receipt     Receipt[]
+}
+
+model Receipt {
+  id          Int      @id @default(autoincrement())
+  title       String   
+  amount      Float
+  category    String
+  date        DateTime
+  user_id     Int      @map("user_id")
+  user        User     @relation(fields: [user_id], references: [id])
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt 
 }

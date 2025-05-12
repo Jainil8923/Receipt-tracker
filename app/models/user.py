@@ -20,6 +20,7 @@ class GetUserDataModel(BaseModel):
     deleted_at: Optional[datetime] = None
     is_verified: bool
     is_deleted: bool
-    
+
 class UserLoginToken(BaseModel):
-    token: str = Field(..., min_length=20, description="The JWT access token for authentication.")
+    access_token: str
+    token_type: str

@@ -1,14 +1,16 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Form
 from models.user import UserRegistrationModel, UserLoginModel, GetUserDataModel, UserLoginToken
 from core.security import hash_password, verify_password, create_access_token
 from db.session import connect, disconnect, prisma
 from prisma.errors import UniqueViolationError
 import datetime
 import os
+from fastapi.responses import JSONResponse
+
 
 auth_router = APIRouter()
 
-@auth_router.post('/register', response_model=GetUserDataModel, status_code=201)
+@auth_router.post('/register', response_model=GetUserDataModel, status_code=201, tags=["Auth"])
 async def register_user(user: UserRegistrationModel):
     try:
         await connect()
@@ -43,7 +45,8 @@ async def register_user(user: UserRegistrationModel):
     finally:
         await disconnect()
         
-@auth_router.post('/login', response_model=UserLoginToken, status_code=201)
+
+@auth_router.post('/login', response_model=UserLoginToken, status_code=201, tags=["Auth"])
 async def login(user_auth: UserLoginModel):
     try:
         await connect()
@@ -55,17 +58,33 @@ async def login(user_auth: UserLoginModel):
         if not is_password_correct:
             raise HTTPException(status_code=401, detail="Invalid credentials.")
         payload = {
-            "user_email": user_auth.email,
+            "sub": user_auth.email,
             "iat": datetime.datetime.utcnow(),
             "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=int(os.getenv("JWT_EXPIRATION_MINUTES", 30)))
         }
         token = create_access_token(payload)
-        return {"token": token}
-
+        response = JSONResponse(content={"access_token": user_auth.email,"token": token, "token_type":"bearer"})
+        response.set_cookie(
+            key="access_token",
+            value=token,
+            httponly=True,
+            secure=True,
+            max_age=60*30,
+            path="/"
+        )
+        return {"access_token": token, "token_type": "bearer"}
     except HTTPException as e:
         raise e 
     except Exception as e:
         print(f"Unexpected error in login service: {e}")
         raise HTTPException(status_code=500, detail="Internal server error.")
     finally:
-        await disconnect()     
+        await disconnect()
+
+@auth_router.post('/token', response_model=UserLoginToken, tags=["Auth"])
+async def login_oauth(
+    username: str = Form(...),
+    password: str = Form(...)
+):
+    user_auth = UserLoginModel(email=username, password=password)
+    return await login(user_auth)

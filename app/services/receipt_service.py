@@ -2,6 +2,7 @@ from db.session import connect, disconnect, prisma
 from models.user import ReceiptResponseModel, ReceiptCreateModel
 from fastapi import HTTPException
 from typing import List
+import datetime
 
 async def create_receipt(data, user_id):
     try:
@@ -35,7 +36,7 @@ async def get_user_receipts(user_id: int, skip: int = 0, limit: int = 10) -> Lis
     try:
         await connect()
         receipts_list = await prisma.receipt.find_many(
-            where={"user_id": int(user_id)},
+            where={"user_id": int(user_id), "deleted_at": None},
             skip=skip,
             take=limit
         )
@@ -61,9 +62,8 @@ async def get_receipt_by_id(receipt_id: int) -> ReceiptResponseModel:
     try:
         await connect()
         receipt = await prisma.receipt.find_unique(where={"id": receipt_id})
-        if not receipt:
+        if not receipt or receipt.deleted_at is not None:
             raise HTTPException(status_code=404, detail="Receipt not found.")
-        
         return ReceiptResponseModel(
             id=str(receipt.id),
             title=receipt.title,
@@ -82,11 +82,10 @@ async def get_receipt_by_id(receipt_id: int) -> ReceiptResponseModel:
 async def update_receipt_by_id(receipt_id: int, new_receipt: ReceiptCreateModel) -> ReceiptResponseModel:
     try:
         await connect()
-        receipt = await prisma.receipt.find_unique(where={"id": receipt_id})
+        receipt = await prisma.receipt.find_unique(where={"id": receipt_id, "deleted_at": None})
         if not receipt:
             raise HTTPException(status_code=404, detail="Receipt not found.")
         
-        # result = await prisma.receipt.update(data=new_receipt.model_dump(), where={"id": int(receipt_id)})
         result = await prisma.receipt.update(
             data={
                 **new_receipt.model_dump(),
@@ -108,3 +107,22 @@ async def update_receipt_by_id(receipt_id: int, new_receipt: ReceiptCreateModel)
         raise HTTPException(status_code=500, detail=f"Error: {e}")
     finally:
         await disconnect()
+        
+async def delete_receipt_by_id(receipt_id: int):
+    try:
+        await connect()
+        receipt = await prisma.receipt.find_unique(where={"id": receipt_id, "deleted_at": None})
+        if not receipt:
+            raise HTTPException(status_code=404, detail="Receipt not found.")
+
+        await prisma.receipt.update(
+            where={"id": receipt_id},
+            data={"deleted_at": datetime.datetime.utcnow()}
+        )
+        
+        return  "Receipt is deleted successfully."
+    except HTTPException as e:
+        print(f"Error occured at delete_receipt service: {e}")
+    finally:
+        await disconnect()
+        

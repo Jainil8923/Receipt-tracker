@@ -1,5 +1,5 @@
 from db.session import connect, disconnect, prisma
-from models.user import ReceiptResponseModel
+from models.user import ReceiptResponseModel, ReceiptCreateModel
 from fastapi import HTTPException
 from typing import List
 
@@ -76,5 +76,35 @@ async def get_receipt_by_id(receipt_id: int) -> ReceiptResponseModel:
         )
     except Exception as e:
         raise
+    finally:
+        await disconnect()
+        
+async def update_receipt_by_id(receipt_id: int, new_receipt: ReceiptCreateModel) -> ReceiptResponseModel:
+    try:
+        await connect()
+        receipt = await prisma.receipt.find_unique(where={"id": receipt_id})
+        if not receipt:
+            raise HTTPException(status_code=404, detail="Receipt not found.")
+        
+        # result = await prisma.receipt.update(data=new_receipt.model_dump(), where={"id": int(receipt_id)})
+        result = await prisma.receipt.update(
+            data={
+                **new_receipt.model_dump(),
+                "user_id": receipt.user_id  
+            },
+            where={"id": int(receipt_id)}
+        )
+        return ReceiptResponseModel(
+            id=str(result.id),
+            title=result.title,
+            amount=result.amount,
+            category=result.category,
+            date=result.date,
+            user_id=result.user_id,
+            updated_at=result.updated_at,
+            created_at=result.created_at,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error: {e}")
     finally:
         await disconnect()

@@ -120,7 +120,7 @@ async def delete_receipt_by_id(receipt_id: int):
             data={"deleted_at": datetime.datetime.utcnow()}
         )
         
-        return  "Receipt is deleted successfully."
+        return {"message": "Receipt is deleted successfully."}    
     except HTTPException as e:
         print(f"Error occured at delete_receipt service: {e}")
     finally:

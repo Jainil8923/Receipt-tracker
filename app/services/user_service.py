@@ -15,7 +15,7 @@ async def update_user_by_id(user_id: int, new_user: UserProfileUpdateModel) -> G
             data={
                 **new_user.model_dump(),
             },
-            where={"id": int(user_id)}
+            where={"id": int(user_id)}  
         )
         return GetUserDataModel(
             id=str(result.id),

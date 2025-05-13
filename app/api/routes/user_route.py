@@ -11,3 +11,4 @@ async def update_receipt_by_id_endpoint(user_id: int, payload:UserProfileUpdateM
     if str(user_id) != str(current_user.id):
         raise HTTPException(status_code=403, detail="You are not authorized to update this profile.")
     return await update_user_by_id(user_id, payload)
+

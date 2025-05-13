@@ -1,11 +1,13 @@
 from fastapi import APIRouter, HTTPException, Form
 from models.user import UserRegistrationModel, UserLoginModel, GetUserDataModel, UserLoginToken
-from core.security import hash_password, verify_password, create_access_token
+from core.security import hash_password, verify_password, create_access_token, create_email_verification_token, verify_email_verification_token
 from db.session import connect, disconnect, prisma
 from prisma.errors import UniqueViolationError
 import datetime
 import os
 from fastapi.responses import JSONResponse
+from core.email_utils import send_verification_email
+
 
 
 auth_router = APIRouter()
@@ -20,13 +22,23 @@ async def register_user(user: UserRegistrationModel):
             raise HTTPException(status_code=409, detail="Email already registered")
 
         user.password = hash_password(user.password)
-        created_user = await prisma.user.create(
-            data={
-                "name": user.name,
-                "email": user.email,
-                "password": user.password,
-            }
-        )
+        try:
+            verification_data = {"email": user.email}
+            token = create_email_verification_token(verification_data)
+            await send_verification_email(user.email, token)
+            
+            created_user = await prisma.user.create(
+                data={
+                    "name": user.name,
+                    "email": user.email,
+                    "password": user.password,
+                }
+            )
+        except UniqueViolationError:
+            raise HTTPException(status_code=409, detail="Email already registered")
+        except Exception as e:
+            print(f"Error in email verification or user creation: {e}")
+            raise HTTPException(status_code=500, detail="Failed to create user")
         return GetUserDataModel(
             id=str(created_user.id),
             name=created_user.name,
@@ -88,3 +100,18 @@ async def login_oauth(
 ):
     user_auth = UserLoginModel(email=username, password=password)
     return await login(user_auth)
+
+@auth_router.get("/verify-email")
+async def verify_email(token: str):
+    payload = verify_email_verification_token(token)
+    if not payload:
+        raise HTTPException(status_code=400, detail="Invalid or expired token")
+
+    user_email = payload.get("email")
+    await connect()
+    await prisma.user.update(
+        where={"email": user_email},
+        data={"is_verified": True}
+    )
+    await disconnect()
+    return {"message": "Email successfully verified!"}

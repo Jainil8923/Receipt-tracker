@@ -48,5 +48,5 @@ class ReceiptResponseModel(BaseModel):
     created_at : datetime
     
 class UserProfileUpdateModel(BaseModel):
-    name: str = Field(..., max_length=100)
+    name: str = Field(..., max_length=100, pattern="^[a-zA-Z ]+$")
     email: EmailStr

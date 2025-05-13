@@ -23,9 +23,12 @@ async def register_user(user: UserRegistrationModel):
 
         user.password = hash_password(user.password)
         try:
-            verification_data = {"email": user.email}
-            token = create_email_verification_token(verification_data)
-            await send_verification_email(user.email, token)
+            try:
+                verification_data = {"email": user.email}
+                token = create_email_verification_token(verification_data)
+                await send_verification_email(user.email, token)
+            except Exception as e:
+                raise HTTPException(status_code=500, detail=f"Failed to send verification email: {e}")
             
             created_user = await prisma.user.create(
                 data={

@@ -12,12 +12,15 @@ async def send_verification_email(to_email: str, token: str):
     message["To"] = to_email
     message["Subject"] = "Verify your email"
     message.set_content(f"Click the link to verify your email: {verification_link}")
+    try:
+        await aiosmtplib.send(
+            message,
+            hostname=os.getenv("SMTP_HOST"),
+            port=int(os.getenv("SMTP_PORT")),
+            username=os.getenv("SMTP_USER"),
+            password=os.getenv("SMTP_PASS"),
+            start_tls=True,
+        )
+    except Exception as e:
+        raise RuntimeError(f"Failed to send verification email: {e}")
 
-    await aiosmtplib.send(
-        message,
-        hostname=os.getenv("SMTP_HOST"),
-        port=int(os.getenv("SMTP_PORT")),
-        username=os.getenv("SMTP_USER"),
-        password=os.getenv("SMTP_PASS"),
-        start_tls=True,
-    )

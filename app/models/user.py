@@ -46,3 +46,7 @@ class ReceiptResponseModel(BaseModel):
     user_id: int
     updated_at: Optional[datetime] = None
     created_at : datetime
+    
+class UserProfileUpdateModel(BaseModel):
+    name: str = Field(..., max_length=100)
+    email: EmailStr

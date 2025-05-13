@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from core.deps import get_current_user
 from models.user import ReceiptCreateModel, ReceiptResponseModel, GetUserDataModel
-from services.receipt_service import create_receipt, get_user_receipts, get_receipt_by_id, update_receipt_by_id
+from services.receipt_service import create_receipt, get_user_receipts, get_receipt_by_id, update_receipt_by_id, delete_receipt_by_id
 from typing import List
 
 receipt_router = APIRouter()
@@ -39,3 +39,9 @@ async def update_receipt_by_id_endpoint(receipt_id: int, payload:ReceiptCreateMo
     return await update_receipt_by_id(receipt_id, payload)
     
 
+@receipt_router.delete("/{receipt_id}", response_model=str)
+async def delete_receipt_by_id_endpoint(receipt_id: int, current_user: GetUserDataModel = Depends(get_current_user)):
+    receipt = await get_receipt_by_id(receipt_id)
+    if str(receipt.user_id) != str(current_user.id):
+        raise HTTPException(status_code=403, detail="You are not authorized to access this receipt.")
+    return await delete_receipt_by_id(receipt_id)

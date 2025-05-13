@@ -3,7 +3,10 @@ from jose import jwt, JWTError, ExpiredSignatureError
 import os
 from fastapi import HTTPException
 from dotenv import load_dotenv
+import datetime 
+
 load_dotenv()
+
 
 SECRET_KEY = os.getenv('SECRET_KEY')
 if not SECRET_KEY:
@@ -31,3 +34,16 @@ def decode_access_token(token: str) -> dict:
         raise HTTPException(status_code=401, detail="Invalid token")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Unexpected error: {e}")
+
+def create_email_verification_token(data: dict, expires_minutes: int = int(os.getenv("EMAIL_TOKEN_EXPIRES", 1440))):
+    expire = datetime.datetime.utcnow() + datetime.timedelta(minutes=expires_minutes)
+    to_encode = {**data, "exp": expire}
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+def verify_email_verification_token(token: str):
+    try:
+        return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token has expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token")

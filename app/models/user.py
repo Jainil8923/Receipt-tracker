@@ -50,3 +50,5 @@ class ReceiptResponseModel(BaseModel):
 class UserProfileUpdateModel(BaseModel):
     name: str = Field(..., max_length=100, pattern="^[a-zA-Z ]+$")
     email: EmailStr
+class EmailRequest(BaseModel):
+    email: str

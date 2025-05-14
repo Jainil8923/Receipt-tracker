@@ -1,5 +1,5 @@
-from fastapi import APIRouter, HTTPException, Form
-from models.user import UserRegistrationModel, UserLoginModel, GetUserDataModel, UserLoginToken
+from fastapi import APIRouter, HTTPException, Form, Request
+from models.user import UserRegistrationModel, UserLoginModel, GetUserDataModel, UserLoginToken, EmailRequest
 from core.security import hash_password, verify_password, create_access_token, create_email_verification_token, verify_email_verification_token
 from db.session import connect, disconnect, prisma
 from prisma.errors import UniqueViolationError
@@ -7,8 +7,6 @@ import datetime
 import os
 from fastapi.responses import JSONResponse
 from core.email_utils import send_verification_email
-
-
 
 auth_router = APIRouter()
 
@@ -104,13 +102,13 @@ async def login_oauth(
     user_auth = UserLoginModel(email=username, password=password)
     return await login(user_auth)
 
-@auth_router.get("/verify-email")
+@auth_router.get("/verify-email", tags=["Auth"])
 async def verify_email(token: str):
     payload = verify_email_verification_token(token)
     if not payload:
         raise HTTPException(status_code=400, detail="Invalid or expired token")
 
-    user_email = payload.get("email")
+    user_email = payload.get("user_email")
     await connect()
     await prisma.user.update(
         where={"email": user_email},
@@ -118,3 +116,30 @@ async def verify_email(token: str):
     )
     await disconnect()
     return {"message": "Email successfully verified!"}
+
+@auth_router.post("/resend-verification", status_code=200, tags=["Auth"])
+async def resend_verification_email(payload: EmailRequest):
+    email = payload.email
+
+    if not email:
+        raise HTTPException(status_code=400, detail="Email is required.")
+
+    await connect()
+    user = await prisma.user.find_unique(where={"email": email})
+    await disconnect()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+    if user.is_verified:
+        raise HTTPException(status_code=400, detail="User is already verified.")
+
+    token_data = {
+        "user_email": user.email,
+        "iat": datetime.datetime.utcnow(),
+        "exp": datetime.datetime.utcnow() + datetime.timedelta(minutes=int(os.getenv("JWT_EXPIRATION_MINUTES", 30)))
+    }
+    token = create_access_token(token_data)
+
+    await send_verification_email(user.email, token)
+
+    return {"message": "Verification email resent successfully."}
